@@ -1,0 +1,8 @@
+fastapi==0.115.12
+python-multipart==0.0.20
+pillow==11.1.0
+numpy==2.2.4
+huggingface-hub==0.30.2
+# CPU-only PyTorch wheel to avoid downloading CUDA libraries.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0+cpu
