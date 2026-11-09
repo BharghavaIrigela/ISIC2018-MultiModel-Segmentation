@@ -1,11 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "trailingSlash": false,
-  "functions": {
-    "api/**/*.py": {
-      "maxDuration": 300,
-      "excludeFiles": "{tests/**,__tests__/**,**/*.test.py,fixtures/**,testdata/**,sample-data/**}"
-    }
-  }
+  "trailingSlash": false
 }
