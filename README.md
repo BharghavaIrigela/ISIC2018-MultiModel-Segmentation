@@ -1,37 +1,25 @@
 # ISIC 2018 Multi-Model Skin Lesion Segmentation
 
-A research and educational prototype for binary skin-lesion segmentation on ISIC 2018 Task 1 images. It compares three TorchScript models:
+A research and educational prototype for binary lesion segmentation on ISIC 2018 Task 1 images, comparing three TorchScript models:
 
 - U-Net
 - Swin-UNet
 - TransUNet
 
-The web interface is designed for Vercel. The FastAPI inference service is designed to run separately (for example, on a Hugging Face Docker Space).
+## Deployment architecture
 
-## Architecture
+- **Frontend:** static HTML dashboard served by Vercel.
+- **Inference API:** Vercel Python Function in `api/index.py` (FastAPI).
+- **Model storage:** Hugging Face model repository: [bharghavairigela/isic2018-segmentation-models](https://huggingface.co/bharghavairigela/isic2018-segmentation-models).
 
-- **Frontend:** static HTML/CSS/JavaScript, deployed on Vercel.
-- **Backend:** FastAPI + PyTorch, deployed separately.
-- **Model artifacts:** three TorchScript `.pt` files, stored outside this Git repository and mounted/downloaded by the backend into its `models/` directory.
+The API downloads the three public TorchScript files from the Hugging Face repository on demand and caches them in the warm function instance. No model weights are committed to this Git repository.
 
-The backend expects these files:
+## API endpoints
 
-```text
-models/
-├── unet_scripted.pt
-├── swin_unet_scripted.pt
-└── transunet_scripted.pt
-```
+- `GET /api/health` — API health and model loading status.
+- `POST /api/predict-all` — run all three models and return masks, probability maps, overlays, and majority-vote consensus.
 
-Do not commit model weights or private access tokens to this repository.
-
-## API
-
-- `GET /health` — backend status and loaded model information.
-- `POST /predict-all` — run all three models and return their masks, probability maps, overlays, and a majority-vote consensus.
-- `POST /predict/{model_key}` — run one model. Supported keys: `unet`, `swin_unet`, `transunet`.
-
-The frontend sends a multipart image field named `file` to `/predict-all`. Supported image formats are JPEG and PNG; maximum upload size is 12 MB.
+The prediction endpoint accepts a multipart form field named `file`, with a JPEG or PNG image. The current frontend limits uploads to 4 MB to stay below Vercel Function request-body limits.
 
 ## Input preprocessing
 
@@ -42,38 +30,41 @@ The frontend sends a multipart image field named `file` to `/predict-all`. Suppo
   - Std: `[0.229, 0.224, 0.225]`
 - Binary mask threshold: 0.5
 
-## Local backend setup
+The API returns result images at 224 × 224. The browser scales them for display. This keeps responses compact and avoids returning full-resolution base64 images.
 
-Use Python 3.11 or a compatible Python version supported by the installed PyTorch release.
+## Deploy on Vercel
 
-1. Install dependencies from the backend requirements file.
-2. Place the three model files in `backend/models/` (or set `MODEL_DIR`).
-3. Start the API with Uvicorn.
+1. Import this GitHub repository into Vercel.
+2. Set Root Directory to `./`.
+3. Use the **Other** framework preset.
+4. Keep the Python runtime files at the repository root:
+   - `api/index.py`
+   - `requirements.txt`
+   - `.python-version`
+   - `vercel.json`
+5. Deploy and open the generated Vercel URL.
+6. Leave the dashboard's API URL blank (or use the default same-origin URL), then click **Check API status**.
 
-Example:
+The Hugging Face model repository is public, so no access token is required for downloading these model artifacts. If the model repository is made private later, configure a Hugging Face read token as the Vercel environment variable `HF_TOKEN`; never commit the token.
 
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn api_server:app --host 0.0.0.0 --port 7860
+## Runtime considerations
+
+The API uses CPU inference and one PyTorch thread. The models are cached in a warm function instance after first use. Cold starts can take longer because model files must be downloaded and loaded. Vercel function bundle-size, memory, duration, and account-plan limits apply. Deployment must be tested on the selected Vercel plan; successful build does not guarantee that three-model inference will fit all runtime limits.
+
+## Model artifacts
+
+The three TorchScript files are stored in the Hugging Face repository under:
+
+```text
+models/unet_scripted.pt
+models/swin_unet_scripted.pt
+models/transunet_scripted.pt
 ```
 
-## Frontend setup
+## Evaluation
 
-The static frontend is served from the repository root. In the frontend, enter the deployed backend base URL (without a trailing slash), check API health, and upload a JPEG or PNG image.
-
-## Deployment notes
-
-- Deploy the repository root as a static Vercel project.
-- Deploy the FastAPI backend separately using a Docker-based service.
-- Configure backend CORS with `ALLOWED_ORIGINS` set to the exact deployed frontend origin(s).
-- Configure `MODEL_DIR` to point to the directory containing the TorchScript files.
-- GPU availability depends on the backend host and its selected hardware plan.
-
-## Evaluation and reproducibility
-
-The repository includes model-export and inference benchmark metadata. These records describe the reported experiments and should not be interpreted as clinical validation.
+The repository's benchmark and export metadata describe the reported experiments. They are not clinical validation.
 
 ## Disclaimer
 
-This project is for research and educational demonstration only. It is not clinically validated and must not be used to diagnose skin cancer or make treatment decisions. Model probability maps are not calibrated clinical confidence estimates; the consensus mask is a majority-vote combination, not an independently validated segmentation.
+This project is for research and educational demonstration only. It is not clinically validated and must not be used to diagnose skin cancer or make treatment decisions. Probability maps are model outputs, not calibrated clinical confidence estimates. The consensus mask is a majority-vote combination, not an independently validated segmentation.
