@@ -96,7 +96,8 @@ function renderOutput(logits,rgbCanvas){
  maskCtx.putImageData(overlayImage,0,0);const overlayUrl=imageDataUrl(maskCanvas);
  return {mask,maskUrl,probabilityUrl,overlayUrl,lesionArea:positive/mask.length*100,meanLesionProbability:positive?lesionProbabilitySum/positive*100:0};
 }
-function setDownload(id,url,filename){const a=$(id);a.href=url;a.download=filename}\nfunction updateModelImage(key,view){
+function setDownload(id,url,filename){const a=$(id);a.href=url;a.download=filename}
+function updateModelImage(key,view){
  if(!currentResult)return;
  const item=currentResult.models[key],url={overlay:item.overlayUrl,mask:item.maskUrl,probability:item.probabilityUrl}[view];
  $(key+"-image").src=url;
@@ -155,10 +156,15 @@ $("runButton").addEventListener("click",async()=>{
   }
   const consensus=new Uint8Array(SIZE*SIZE);let consensusCount=0;
   for(let i=0;i<consensus.length;i++){const v=masks[0][i]+masks[1][i]+masks[2][i];if(v>=2){consensus[i]=1;consensusCount++}}
-  const consensusCanvas=document.createElement("canvas");consensusCanvas.width=SIZE;consensusCanvas.height=SIZE;\n  const consensusMaskCanvas=document.createElement("canvas");consensusMaskCanvas.width=SIZE;consensusMaskCanvas.height=SIZE;\n  const cctx=consensusCanvas.getContext("2d"),cmctx=consensusMaskCanvas.getContext("2d"),src=prepared.rgbCanvas.getContext("2d").getImageData(0,0,SIZE,SIZE).data,ci=cctx.createImageData(SIZE,SIZE),cmi=cmctx.createImageData(SIZE,SIZE);
-  for(let i=0;i<consensus.length;i++){const q=i*4,a=consensus[i]?0.42:0,v=consensus[i]?255:0;ci.data[q]=Math.round(src[q]*(1-a)+255*a);ci.data[q+1]=Math.round(src[q+1]*(1-a)+45*a);ci.data[q+2]=Math.round(src[q+2]*(1-a)+60*a);ci.data[q+3]=255;cmi.data[q]=cmi.data[q+1]=cmi.data[q+2]=v;cmi.data[q+3]=255}\n  cctx.putImageData(ci,0,0);cmctx.putImageData(cmi,0,0);
+  const consensusCanvas=document.createElement("canvas");consensusCanvas.width=SIZE;consensusCanvas.height=SIZE;
+  const consensusMaskCanvas=document.createElement("canvas");consensusMaskCanvas.width=SIZE;consensusMaskCanvas.height=SIZE;
+  const cctx=consensusCanvas.getContext("2d"),cmctx=consensusMaskCanvas.getContext("2d"),src=prepared.rgbCanvas.getContext("2d").getImageData(0,0,SIZE,SIZE).data,ci=cctx.createImageData(SIZE,SIZE),cmi=cmctx.createImageData(SIZE,SIZE);
+  for(let i=0;i<consensus.length;i++){const q=i*4,a=consensus[i]?0.42:0,v=consensus[i]?255:0;ci.data[q]=Math.round(src[q]*(1-a)+255*a);ci.data[q+1]=Math.round(src[q+1]*(1-a)+45*a);ci.data[q+2]=Math.round(src[q+2]*(1-a)+60*a);ci.data[q+3]=255;cmi.data[q]=cmi.data[q+1]=cmi.data[q+2]=v;cmi.data[q+3]=255}
+  cctx.putImageData(ci,0,0);cmctx.putImageData(cmi,0,0);
   currentResult={models:modelResults};
-  $("consensusImage").src=imageDataUrl(consensusCanvas);\n  setDownload("consensusMaskDownload",imageDataUrl(consensusMaskCanvas),"consensus_lesion_mask.png");setDownload("consensusOverlayDownload",imageDataUrl(consensusCanvas),"consensus_overlay.png");\n  $("consensusDetails").textContent="Majority vote (at least 2 of 3) · Lesion area: "+(consensusCount/consensus.length*100).toFixed(2)+"%";
+  $("consensusImage").src=imageDataUrl(consensusCanvas);
+  setDownload("consensusMaskDownload",imageDataUrl(consensusMaskCanvas),"consensus_lesion_mask.png");setDownload("consensusOverlayDownload",imageDataUrl(consensusCanvas),"consensus_overlay.png");
+  $("consensusDetails").textContent="Majority vote (at least 2 of 3) · Lesion area: "+(consensusCount/consensus.length*100).toFixed(2)+"%";
   for(const key of MODEL_KEYS){const item=modelResults[key];$(key+"-time").textContent=item.inferenceMs.toFixed(2)+" ms";$(key+"-area").textContent=item.lesionArea.toFixed(2)+"%";$(key+"-probability").textContent=item.meanLesionProbability.toFixed(2)+"%";setDownload(key+"-mask-download",item.maskUrl,key+"_mask.png");setDownload(key+"-probability-download",item.probabilityUrl,key+"_probability_map.png");setDownload(key+"-overlay-download",item.overlayUrl,key+"_overlay.png");updateModelImage(key,"overlay")}
   $("totalTime").textContent=(performance.now()-totalStart).toFixed(2)+" ms";
   $("device").textContent="Browser WASM / CPU";
