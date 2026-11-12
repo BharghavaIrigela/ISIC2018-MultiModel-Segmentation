@@ -116,7 +116,7 @@ document.querySelectorAll(".tabs").forEach(c=>c.addEventListener("click",e=>{
 }));
 async function checkModels(){
  if(!window.ort){throw new Error("ONNX Runtime Web did not load. Refresh the page and try again.")};
- setStatus("ONNX Runtime Web loaded. Checking access to the three Hugging Face model files...");
+ setStatus("ONNX Runtime Web loaded. Checking access to the selected Hugging Face model files...");
  const selected=selectedModelKeys();
  for(let i=0;i<selected.length;i++){
   const key=selected[i],r=await fetch(MODEL_URLS[key],{method:"HEAD"});
