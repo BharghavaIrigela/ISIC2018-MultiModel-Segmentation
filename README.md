@@ -1,7 +1,7 @@
 # ISIC 2018 — Multi-Model Skin Lesion Segmentation
 
 <p align="center">
-  <strong>U-Net · Swin-UNet · TransUNet · ONNX Runtime Web · Vercel</strong>
+  <strong>U-Net · Swin-UNet · TransUNet · Attention U-Net · DeepLabV3+ · FPN · ONNX Runtime Web · Vercel</strong>
 </p>
 
 <p align="center">
@@ -12,7 +12,7 @@
   <a href="https://github.com/BharghavaIrigela/ISIC2018-MultiModel-Segmentation">💻 Source Code</a>
 </p>
 
-A browser-based research application for binary skin-lesion segmentation using three deep-learning architectures trained for the ISIC 2018 Challenge — Task 1. Upload a dermoscopic image, compare three model predictions, inspect probability maps, and download the generated outputs.
+A browser-based research application for binary skin-lesion segmentation using three deep-learning architectures trained for the ISIC 2018 Challenge — Task 1. Upload a dermoscopic image, compare predictions from six segmentation models, inspect probability maps, and download the generated outputs.
 
 > **Research and educational use only.** This project is not clinically validated. It must not be used to diagnose skin cancer, assess an individual's cancer risk, or make treatment decisions.
 
@@ -41,7 +41,7 @@ The application runs inference in the user's browser using ONNX Runtime Web and 
 
 ## ✨ Features
 
-- **Three-model comparison:** run U-Net, Swin-UNet, and TransUNet on the same image.
+- **Six-model comparison:** run U-Net, Swin-UNet, TransUNet, Attention U-Net, DeepLabV3+, and FPN on the same image, or select a subset.
 - **Interactive visualizations:** switch between overlay, binary mask, and probability map for each model.
 - **Per-model metrics:** inference time, predicted lesion area, and mean lesion probability within the predicted lesion region.
 - **Majority-vote consensus:** a pixel is included when at least two of the three binary masks classify it as lesion.
@@ -53,9 +53,9 @@ The application runs inference in the user's browser using ONNX Runtime Web and 
 
 1. Open the [live application](https://isic-2018-multi-model-segmentation-qzlpm3mka.vercel.app/).
 2. Select a dermoscopic image in PNG or JPEG format (maximum size: 4 MB).
-3. Click **Compare all three models**.
-4. Wait for the models to load and run. The first visit may download approximately 338 MB of ONNX model files.
-5. Inspect the original image and majority-vote consensus.
+3. Select the models to run (all six are selected by default), then click **Compare selected models**.
+4. Wait for the selected models to load and run. The first visit may download approximately 723 MB when all six models are selected.
+5. Inspect the original image and majority-vote consensus. The consensus uses a strict majority of the selected model masks.
 6. For each model, select **Overlay**, **Mask**, or **Probability**.
 7. Review inference time, lesion area, and mean lesion probability.
 8. Use the download links to save individual model outputs or consensus outputs.
@@ -69,6 +69,9 @@ A modern desktop browser and a stable internet connection are recommended. Downl
 | U-Net | Convolutional encoder-decoder with skip connections | 31,037,633 |
 | Swin-UNet | Hierarchical shifted-window transformer-based segmentation model | 27,166,405 |
 | TransUNet | Compact CNN encoder with a transformer bottleneck and decoder | 29,770,209 |
+| Attention U-Net | U-Net with attention gates | 31,389,165 |
+| DeepLabV3+ | Atrous convolutional encoder-decoder | 40,347,041 |
+| FPN | Feature Pyramid Network segmentation model | 29,212,737 |
 
 **TransUNet implementation note:** this project uses a custom compact CNN–Transformer implementation. It is not the original TransUNet configuration with a pretrained ResNet-50 encoder.
 
@@ -117,7 +120,7 @@ The browser applies the following preprocessing to the selected image:
    - Standard deviation: [0.229, 0.224, 0.225]
 5. Create a float32 input tensor with shape [1, 3, 224, 224].
 
-The model output is converted to pixel-wise scores using sigmoid. A threshold of **0.5** is used to create the binary mask. The three models are run sequentially to reduce peak browser memory use.
+The model output is converted to pixel-wise scores using sigmoid. A threshold of **0.5** is used to create the binary mask. The selected models are run sequentially to reduce peak browser memory use. The original U-Net, Swin-UNet, and TransUNet ONNX exports have fixed batch size 1; the added Attention U-Net, DeepLabV3+, and FPN exports support dynamic batch size, although the application uses batch size 1 for all models.
 
 ### Output types
 
@@ -187,6 +190,10 @@ ONNX deployment files:
 - onnx_models/unet.onnx
 - onnx_models/swin_unet.onnx
 - onnx_models/transunet.onnx
+- onnx_models/attention_unet.onnx
+- onnx_models/deeplabv3plus.onnx
+- onnx_models/fpn.onnx
+- onnx_models/six_model_config.json
 
 Original TorchScript exports are also retained in the model repository under the models directory.
 
